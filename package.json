@@ -1,5 +1,5 @@
 {
-  "name": "react-infinite-scroll-component",
+  "name": "react-infinite-scroll-component-fork-custom-component",
   "version": "6.1.0",
   "description": "An Infinite Scroll component in react.",
   "source": "src/index.tsx",
@@ -97,6 +97,7 @@
       "prettier --write",
       "eslint --fix",
       "git add"
-    ]
+    ],
+    "**/dist/**": "echo 'Skipping dist folder'"
   }
 }
