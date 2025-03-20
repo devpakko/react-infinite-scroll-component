@@ -24,7 +24,10 @@ export interface Props {
   dataLength: number;
   initialScrollY?: number;
   className?: string;
+  // NEW: add component prop that lets you specify the container element.
+  component?: React.ElementType;
 }
+
 
 interface State {
   showLoader: boolean;
@@ -328,64 +331,86 @@ export default class InfiniteScroll extends Component<Props, State> {
   };
 
   render() {
+    // Determine the container element: if a custom component is provided, use it; otherwise, use the default 'div'
+    const Container = this.props.component ? this.props.component : 'div';
+
+    // Define style as before:
     const style = {
       height: this.props.height || 'auto',
       overflow: 'auto',
       WebkitOverflowScrolling: 'touch',
       ...this.props.style,
     } as CSSProperties;
-    const hasChildren =
-      this.props.hasChildren ||
-      !!(
-        this.props.children &&
-        this.props.children instanceof Array &&
-        this.props.children.length
-      );
 
-    // because heighted infiniteScroll visualy breaks
-    // on drag down as overflow becomes visible
-    const outerDivStyle =
-      this.props.pullDownToRefresh && this.props.height
-        ? { overflow: 'auto' }
-        : {};
-    return (
-      <div
-        style={outerDivStyle}
-        className="infinite-scroll-component__outerdiv"
-      >
-        <div
-          className={`infinite-scroll-component ${this.props.className || ''}`}
-          ref={(infScroll: HTMLDivElement) => (this._infScroll = infScroll)}
-          style={style}
-        >
-          {this.props.pullDownToRefresh && (
+    // If using a custom component (e.g. "tbody"), we do not wrap with an outer <div>
+    if (this.props.component) {
+      return (
+          <Container style={style} className={`infinite-scroll-component ${this.props.className || ''}`}>
+            {this.props.pullDownToRefresh && (
+                <div
+                    style={{ position: 'relative' }}
+                    ref={(pullDown: HTMLDivElement) => (this._pullDown = pullDown)}
+                >
+                  <div
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        right: 0,
+                        top: -1 * this.maxPullDownDistance,
+                      }}
+                  >
+                    {this.state.pullToRefreshThresholdBreached
+                        ? this.props.releaseToRefreshContent
+                        : this.props.pullDownToRefreshContent}
+                  </div>
+                </div>
+            )}
+            {this.props.children}
+            {(!this.state.showLoader && !this.props.hasChildren && this.props.hasMore && this.props.loader) ||
+                (this.state.showLoader && this.props.hasMore && this.props.loader)}
+            {!this.props.hasMore && this.props.endMessage}
+          </Container>
+      );
+    } else {
+      // Default behavior: use the existing outer divs
+      const outerDivStyle =
+          this.props.pullDownToRefresh && this.props.height
+              ? { overflow: 'auto' }
+              : {};
+      return (
+          <div style={outerDivStyle} className="infinite-scroll-component__outerdiv">
             <div
-              style={{ position: 'relative' }}
-              ref={(pullDown: HTMLDivElement) => (this._pullDown = pullDown)}
+                className={`infinite-scroll-component ${this.props.className || ''}`}
+                ref={(infScroll: HTMLDivElement) => (this._infScroll = infScroll)}
+                style={style}
             >
-              <div
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  top: -1 * this.maxPullDownDistance,
-                }}
-              >
-                {this.state.pullToRefreshThresholdBreached
-                  ? this.props.releaseToRefreshContent
-                  : this.props.pullDownToRefreshContent}
-              </div>
+              {this.props.pullDownToRefresh && (
+                  <div
+                      style={{ position: 'relative' }}
+                      ref={(pullDown: HTMLDivElement) => (this._pullDown = pullDown)}
+                  >
+                    <div
+                        style={{
+                          position: 'absolute',
+                          left: 0,
+                          right: 0,
+                          top: -1 * this.maxPullDownDistance,
+                        }}
+                    >
+                      {this.state.pullToRefreshThresholdBreached
+                          ? this.props.releaseToRefreshContent
+                          : this.props.pullDownToRefreshContent}
+                    </div>
+                  </div>
+              )}
+              {this.props.children}
+              {(!this.state.showLoader && !this.props.hasChildren && this.props.hasMore && this.props.loader) ||
+                  (this.state.showLoader && this.props.hasMore && this.props.loader)}
+              {!this.props.hasMore && this.props.endMessage}
             </div>
-          )}
-          {this.props.children}
-          {!this.state.showLoader &&
-            !hasChildren &&
-            this.props.hasMore &&
-            this.props.loader}
-          {this.state.showLoader && this.props.hasMore && this.props.loader}
-          {!this.props.hasMore && this.props.endMessage}
-        </div>
-      </div>
-    );
+          </div>
+      );
+    }
   }
+
 }
